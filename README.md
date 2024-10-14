@@ -1,3 +1,41 @@
+# Документация
+
+## Smart-Home
+
+Система управления умным домом.
+
+### AsIs
+
+#### Context
+
+![context-diagram-as-is](docs/as-is-diagrams/contexts.png)
+
+#### Container
+
+![container-diagram-as-is](docs/as-is-diagrams/containers.png)
+
+##### Проблема
+
+Синхронное взаимодействие с датчиками приводит к излишней нагрузке системы. Так как датчику необходимо совершать периодические запросы к системе для отслеживания изменений своего состояния.​​​​​​​
+
+#### Component
+
+![component-diagram-as-is](docs/as-is-diagrams/components.png)
+
+### ToBe
+
+#### Container
+
+![container-diagram-as-is](docs/to-be-diagrams/containers.png)
+
+##### Users Manage Microservice
+
+Микросервис управления пользовательскими данными и аутентификацией.
+
+##### Temperature Manage Microservice
+
+Микросервис управления состоянием устройств в домах.
+
 # Базовая настройка
 
 ## Запуск minikube
