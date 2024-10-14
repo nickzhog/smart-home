@@ -1,0 +1,36 @@
+@startuml er-diagram
+
+title SmartHome ER-Diagram
+
+class Sensor {
+  +String id
+  +String home_id
+  +Int target_temperature
+  +Int current_temperature
+  +Bool is_on
+
+  +void turn_on()
+  +void turn_off()
+  +int get_current_temperature()
+  +int get_target_temperature()
+  +void set_target_temperature()
+}
+
+class Home {
+  +String id
+  +String user_id
+}
+
+class User {
+  +String id
+  +String name
+  +String email
+  +String password_hash
+
+  +void auth()
+}
+
+Sensor ||-right-|{ Home
+Home ||-right-|{ User
+
+@enduml

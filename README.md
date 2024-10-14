@@ -6,6 +6,8 @@
 
 ### AsIs
 
+[Все диаграммы](docs/as-is-diagrams/)
+
 #### Context
 
 ![context-diagram-as-is](docs/as-is-diagrams/contexts.png)
@@ -24,6 +26,8 @@
 
 ### ToBe
 
+[Все диаграммы](docs/to-be-diagrams/)
+
 #### Container
 
 ![container-diagram-as-is](docs/to-be-diagrams/containers.png)
@@ -39,6 +43,10 @@
 ##### Notification Manage Microservice
 
 Микросервис для отправки уведомлений о событиях. Отправляет уведомления устройствам в умных домах об изменении их состояния.
+
+#### ER-Diagram
+
+![er-diagram-to-be](docs/to-be-diagrams/er-diagram.png)
 
 # Базовая настройка
 
