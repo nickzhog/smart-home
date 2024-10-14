@@ -1,0 +1,19 @@
+@startuml
+title SmartHome Context Diagram
+
+top to bottom direction
+
+!include ../C4/C4_Context.puml
+
+Person(user, "User", "A user of the SmartHome System")
+System(SmartHomeSystem, "SmartHome System", "System managing temperature")
+System(Sensor, "Temperature sensor", "Temperature sensor in home")
+
+Rel(user, SmartHomeSystem, "Manage the temperature")
+Rel(user, SmartHomeSystem, "Monitoring the temperature")
+
+Rel(Sensor,SmartHomeSystem,"Write current temperature")
+Rel(Sensor,SmartHomeSystem,"Get target temperature")
+Rel(SmartHomeSystem, Sensor, "Turn On/Off")
+
+@enduml

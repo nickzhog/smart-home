@@ -1,0 +1,29 @@
+
+
+@startuml SmartHome
+title SmartHome Container Diagram
+!include ../C4/C4_Container.puml
+
+Person(user, "User")
+System_Boundary(c1, "Smart Home System") {
+    Container(gateway, "API Gateway", "Kusk", "Gateway for comming HTTP-requests")
+    Container(web_app, "Web Application", "Java", "Allows users change or get current temperature")
+    Container(database, "Database", "PostgreSQL", "Store temperature")
+}
+
+Rel(user, gateway, "Get current temperature", "REST")
+Rel(user, gateway, "Write target temperature", "REST")
+Rel(user, gateway, "Turn on/off sensor", "REST")
+
+Rel(gateway, web_app, "Uses", "REST")
+Rel(web_app, database, "Gets temperature", "JDBC")
+Rel(web_app, database, "Change temperature", "JDBC")
+Rel(web_app, database, "Turn on/off sensor", "JDBC")
+
+
+System(sensor, "Temperature sensor")
+
+Rel(sensor, gateway, "Get target/current temperature from system", "REST")
+Rel(sensor, gateway, "Get target state(on/off)", "REST")
+
+@enduml

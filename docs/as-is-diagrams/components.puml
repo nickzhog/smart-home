@@ -1,0 +1,33 @@
+@startuml SmartHome
+
+title SmartHome Component Diagram
+
+!include ../C4/C4_Component.puml
+
+System_Boundary(c1, "Smart Home System") {
+    Container_Boundary(gateway, "API Gateway") {
+        Component(kusk, "API Gateway", "Kusk API Gateway", "Handle users traffic")
+    }
+    Container_Boundary(smart_home, "Smart Home Java Web Application") {
+        Component(controllers, "HTTP-handlers", "Java Rest Controller", "Handle users HTTP-requests")
+        Component(service, "Service logic", "Java", "Handle business logic")
+        Component(repository, "Repository", "Java postgresql-driver", "Operate with database")
+
+        Rel(controllers, service, "")
+        Rel(service, repository, "Change temperature")
+        Rel(service, repository, "Get temperature")
+    }
+    Container_Boundary(database, "Database") {
+        Component(postgres, "Database", "PostgreSQL", "Storage")
+    }
+
+    Rel(repository, postgres, "Uses", "JDBC")
+}
+Person(user, "User")
+System(sensor, "Temperature sensor")
+
+Rel(sensor, kusk, "Make request to get temperature changes", "HTTP,REST")
+Rel(user, kusk, "Make request", "HTTP,REST")
+Rel(kusk, controllers, "Forward", "HTTP")
+
+@enduml
