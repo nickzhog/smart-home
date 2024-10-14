@@ -1,0 +1,46 @@
+
+
+@startuml SmartHome
+title SmartHome Container Diagram
+!include ../C4/C4_Container.puml
+
+Person(user, "User")
+System_Boundary(c1, "Smart Home System") {
+    Container(gateway, "API Gateway", "Kusk", "Gateway for comming HTTP-requests")
+    
+    Container(temperature_service, "Temperature Manage Microservice", "Java", "Manage the temperature")
+    Container(users_service, "Users Manage Microservice", "Java", "Manage the users and their home(s)")
+    
+    Container(notification_service, "Notification Manage Microservice", "Java", "Manage the notification for sensors")
+    
+    Container(broker, "Message Broker", "Kafka", "Events with target temperature changes")
+    
+    Container(database, "Database", "PostgreSQL", "Store temperature")
+}
+
+Rel(user, gateway, "Change temperature", "REST")
+Rel(user, gateway, "Get current temperature", "REST")
+
+Rel(gateway, users_service, "Auth(JWT)", "REST")
+
+Rel(gateway, temperature_service, "Write current/target temperature", "REST")
+Rel(gateway, temperature_service, "Get current/target temperature", "REST")
+Rel(gateway, temperature_service, "Turn on/off sensor", "REST")
+
+Rel(temperature_service, broker, "Write event about target temperature changes (PUSH)", "TCP")
+Rel(temperature_service, broker, "Write event about sensor state (on/off) (PUSH)", "TCP")
+Rel(notification_service, broker, "Read event about target temperature changes (PULL)", "TCP")
+Rel(notification_service, broker, "Read event about sensor state (on/off (PULL)", "TCP")
+
+Rel(temperature_service, database, "Gets temperature", "JDBC")
+Rel(temperature_service, database, "Change temperature", "JDBC")
+Rel(temperature_service, database, "Turn on/off sensor", "JDBC")
+
+
+System(sensor, "Temperature sensor")
+
+Rel(sensor, gateway, "Write current temperature at home", "REST")
+Rel(notification_service, sensor, "Notify about target temperature changes", "REST")
+Rel(notification_service, sensor, "Notify about state changes (on/off)", "REST")
+
+@enduml
