@@ -16,13 +16,13 @@
 
 ![container-diagram-as-is](docs/as-is-diagrams/containers.png)
 
-##### Проблема
-
-Синхронное взаимодействие с датчиками приводит к излишней нагрузке системы. Так как датчику необходимо совершать периодические запросы к системе для отслеживания изменений своего состояния.​​​​​​​
-
 #### Component
 
 ![component-diagram-as-is](docs/as-is-diagrams/components.png)
+
+#### Проблема
+
+Синхронное взаимодействие с датчиками приводит к излишней нагрузке системы. Так как датчику необходимо совершать периодические запросы к системе для отслеживания изменений своего состояния.​​​​​​​
 
 ### ToBe
 
@@ -36,9 +36,13 @@
 
 Микросервис управления пользовательскими данными и аутентификацией.
 
+[OpenAPI Specification](docs/to-be-diagrams/openapi-users.json)
+
 ##### Temperature Manage Microservice
 
 Микросервис для операций по изменению состояний устройств. А также позволяет понять актуальную температуру.
+
+[OpenAPI Specification](docs/to-be-diagrams/openapi-temperature.json)
 
 ##### Notification Manage Microservice
 

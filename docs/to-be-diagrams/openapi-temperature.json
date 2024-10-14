@@ -1,0 +1,301 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Temperature Manage Microservice - OpenAPI 3.0",
+    "description": "Manage devices in Smart-Home System",
+    "contact": {
+      "email": "apiteam@smart-home.com"
+    },
+    "version": "1.0.11"
+  },
+  "externalDocs": {
+    "description": "Find out more about Swagger",
+    "url": "http://swagger.io"
+  },
+  "servers": [
+    {
+      "url": "https://smart-home.com/users"
+    }
+  ],
+  "tags": [
+    {
+      "name": "sensor",
+      "description": "Operations about sensor"
+    }
+  ],
+  "paths": {
+    "/sensor/{sensor_id}/turn-on": {
+      "post": {
+        "tags": [
+          "sensor"
+        ],
+        "summary": "Turn off sensor",
+        "description": "",
+        "operationId": "turnOff",
+        "parameters": [
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "description": "Sensor ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "description": "jwt-auth token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Sensor not found"
+          }
+        }
+      }
+    },
+    "/sensor/{sensor_id}/turn-off": {
+      "post": {
+        "tags": [
+          "sensor"
+        ],
+        "summary": "Turn on sensor",
+        "description": "",
+        "operationId": "turnOn",
+        "parameters": [
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "description": "Sensor ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "description": "jwt-auth token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Sensor not found"
+          }
+        }
+      }
+    },
+    "/sensor/{sensor_id}/current-temperature": {
+      "get": {
+        "tags": [
+          "sensor"
+        ],
+        "summary": "Get current temperature",
+        "description": "",
+        "operationId": "currentTemperature",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "jwt-auth token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "description": "sensor id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Sensor not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sensor"
+        ],
+        "summary": "Set current temperature",
+        "description": "",
+        "operationId": "setCurrentTemperature",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "jwt-auth token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "description": "sensor id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Sensor not found"
+          }
+        }
+      }
+    },
+    "/sensor/{sensor_id}/target-temperature": {
+      "get": {
+        "tags": [
+          "sensor"
+        ],
+        "summary": "Get target temperature",
+        "description": "",
+        "operationId": "targetTemperature",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "jwt-auth token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "description": "sensor id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Sensor not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sensor"
+        ],
+        "summary": "Set target temperature",
+        "description": "",
+        "operationId": "setTargetTemperature",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "jwt-auth token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "description": "sensor id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Sensor not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Token": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "JWT-auth token",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+          }
+        }
+      },
+      "sensor_id": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Sensor ID",
+            "example": "f9abb6e4-3277-4b04-b67d-013e2fe51e1a"
+          }
+        }
+      }
+    }
+  }
+}
