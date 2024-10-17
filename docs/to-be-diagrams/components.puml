@@ -1,0 +1,80 @@
+@startuml components
+
+title SmartHome Component Diagram
+
+!include ../C4/C4_Component.puml
+
+System_Boundary(c1, "Smart Home System") {
+    Container_Boundary(gateway, "API Gateway") {
+        Component(kusk, "API Gateway", "Kusk API Gateway", "Handle users traffic")
+    }
+    Container_Boundary(db, "Storage") {
+        Component(postgres, "Database", "PostgreSQL", "Store data about users, sensors, temperature")
+    }
+    Container_Boundary(broker, "Message Broker") {
+        Component(kafka, "Message Broker", "Kafka", "Events with temperature changes")
+    }
+    
+    Container_Boundary(temperature_service, "Temperature Manage Microservice") {
+        Component(controllers_temperature, "HTTP-handlers", "Java Rest Controller", "Handle users HTTP-requests")
+        Component(service_temperature, "Service logic", "Java", "Handle business logic")
+        Component(repository_temperature, "Repository", "Java postgresql-driver", "Operate with database")
+        Component(broker_producer, "Broker Producer", "Java", "Operate with broker")
+
+        Rel(controllers_temperature, service_temperature, "")
+        Rel(service_temperature, repository_temperature, "Change target/current temperature")
+        Rel(service_temperature, repository_temperature, "Get target/current temperature")
+        Rel(service_temperature, repository_temperature, "Set on/off sensor")
+
+        Rel(service_temperature, broker_producer, "Event about set on/off sensor")
+        Rel(service_temperature, broker_producer, "Event about change target/current temperature")
+    }
+
+    Container_Boundary(users_service, "Users Manage Microservice") {
+        Component(controllers_users, "HTTP-handlers", "Java Rest Controller", "Handle users HTTP-requests")
+        Component(service_users, "Service logic", "Java", "Handle business logic")
+        Component(repository_users, "Repository", "Java postgresql-driver", "Operate with database")
+        Component(auth_manager, "Auth manager", "Java", "Handle auth")
+
+        Rel(controllers_users, service_users, "")
+        Rel(service_users, auth_manager, "Auth user")
+        Rel(service_users, auth_manager, "Update token")
+        Rel(auth_manager, repository_users, "Check user creds", "JDBC")
+    }
+
+    Container_Boundary(notify_service, "Notification Manage Microservice") {
+        Component(webhooker, "HTTP-Client", "Java", "Send webhooks")
+        Component(service_notify, "Service logic", "Java", "Handle business logic")
+        Component(broker_consumer, "Broker Consumer", "Java", "Operate with broker")
+
+        Rel(broker_consumer, kafka, "Read event about target temperature changes (PULL)", "TCP")
+        Rel(broker_consumer, kafka, "Read event about sensor state (on/off (PULL)", "TCP")
+        Rel(broker_consumer, service_notify, "")
+        Rel(service_notify, webhooker, "")
+    }
+
+' Temperature
+    Rel(repository_temperature, postgres, "Change target/current temperature")
+    Rel(repository_temperature, postgres, "Get target/current temperature")
+    Rel(repository_temperature, postgres, "Set on/off sensor")
+    Rel(broker_producer, kafka, "Write event about on/off sensor")
+    Rel(broker_producer, kafka, "Write event about current/target temperature change")
+
+' Users
+    Rel(repository_users, postgres, "Check user creds", "JDBC")
+
+}
+Person(user, "User")
+System(sensor, "Temperature sensor")
+
+Rel(sensor, kusk, "Write current temperature changes", "HTTP,REST")
+
+Rel(user, kusk, "Make request", "HTTP,REST")
+Rel(kusk, controllers_users, "Forward", "REST")
+Rel(kusk, controllers_temperature, "Forward", "HTTP")
+
+' Notify
+Rel(webhooker, sensor, "Notify about target temperature changes", "REST")
+Rel(webhooker, sensor, "Notify about state changes (on/off)", "REST")
+
+@enduml
