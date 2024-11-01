@@ -1,6 +1,9 @@
 package state
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 type State struct {
 	currentTemperature int
@@ -10,7 +13,9 @@ type State struct {
 }
 
 func NewSensorState() *State {
-	return &State{}
+	return &State{
+		mu: new(sync.RWMutex),
+	}
 }
 
 func (s *State) GetCurrentTemperature() int {
@@ -28,7 +33,14 @@ func (s *State) GetTargetTemperature() int {
 func (s *State) SetTargetTemperature(val int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	s.targetTemperature = val
+
+	// current temperature change stub
+	go func() {
+		time.Sleep(time.Second * 5)
+		s.SetCurrentTemperature(val)
+	}()
 }
 func (s *State) SetCurrentTemperature(val int) {
 	s.mu.Lock()

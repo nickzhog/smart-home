@@ -35,13 +35,15 @@ func NewServer(logger *slog.Logger, state *state.State) *server {
 	})
 
 	server.srv = &http.Server{
-		Handler: r,
+		Handler:  r,
+		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
 	return server
 }
 func (s *server) Listen(ctx context.Context, listen string) {
-	s.logger.Info("start listen", slog.String("interface", listen))
+	s.logger.Info("start listen")
+	s.srv.Addr = listen
 
 	go func() {
 		if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -58,8 +60,8 @@ func (s *server) Listen(ctx context.Context, listen string) {
 	s.srv.Shutdown(ctxShutDown)
 
 	s.logger.Info("server exited properly")
-
 }
+
 func (s *server) changeTargetTemperatureHandler(w http.ResponseWriter, r *http.Request) {
 	value := chi.URLParam(r, "value")
 	if len(value) == 0 {

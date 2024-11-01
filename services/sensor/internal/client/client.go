@@ -19,7 +19,10 @@ type Client struct {
 }
 
 func NewClient(logger *slog.Logger, state *state.State) *Client {
-	c := &Client{}
+	c := &Client{
+		logger: logger,
+		state:  state,
+	}
 
 	return c
 }
