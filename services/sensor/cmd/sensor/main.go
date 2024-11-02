@@ -42,7 +42,7 @@ func main() {
 
 	client := client.NewClient(
 		logger.With(slog.String("client_addr", cfg.SmartHomeApiAddress)),
-		sensorState)
+		sensorState, cfg.SensorId)
 	go client.Start(ctx, cfg.SmartHomeApiAddress)
 
 	<-ctx.Done()

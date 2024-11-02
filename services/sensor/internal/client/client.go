@@ -16,12 +16,15 @@ type Client struct {
 	logger             *slog.Logger
 	currentTemperature int
 	state              *state.State
+
+	sensorId string
 }
 
-func NewClient(logger *slog.Logger, state *state.State) *Client {
+func NewClient(logger *slog.Logger, state *state.State, sensorId string) *Client {
 	c := &Client{
-		logger: logger,
-		state:  state,
+		logger:   logger,
+		state:    state,
+		sensorId: sensorId,
 	}
 
 	return c
@@ -43,7 +46,7 @@ func (c *Client) Start(ctx context.Context, addr string) {
 			beforeCur := c.currentTemperature
 			c.currentTemperature = actualCur
 
-			url := addr + "/current_temperature/" + fmt.Sprint(actualCur)
+			url := fmt.Sprintf("%s/sensor/%s/current-temperature/%s", addr, c.sensorId, fmt.Sprint(actualCur))
 			c.logger.Info("current temperature changes",
 				slog.Int("actual", actualCur),
 				slog.Int("before", beforeCur),
