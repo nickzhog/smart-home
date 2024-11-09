@@ -61,6 +61,7 @@ func (c *Client) Start(ctx context.Context, addr string) {
 					slog.String("url", url))
 				continue
 			}
+			defer resp.Body.Close()
 			c.logger.Info("response code", slog.Int("code", resp.StatusCode))
 
 		case <-ctx.Done():
