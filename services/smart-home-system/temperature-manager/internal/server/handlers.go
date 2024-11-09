@@ -82,7 +82,7 @@ func (s *server) getCurrentTemperatureHandler(w http.ResponseWriter, r *http.Req
 		http.Error(w, "cant get cur temp: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintln(w, val)
+	fmt.Fprintln(w, *val)
 }
 func (s *server) getTargetTemperatureHandler(w http.ResponseWriter, r *http.Request) {
 	sensorId := chi.URLParam(r, "sensor_id")
@@ -98,5 +98,5 @@ func (s *server) getTargetTemperatureHandler(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "cant get tar temp: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintln(w, val)
+	fmt.Fprintln(w, *val)
 }

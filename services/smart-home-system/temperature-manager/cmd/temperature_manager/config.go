@@ -3,9 +3,10 @@ package main
 import "github.com/caarlos0/env"
 
 type config struct {
-	DatabaseUri string `env:"DATABASE_URI"`
-	KafkaAddr   string `env:"KAFKA_ADDR"`
-	KafkaTopic  string `env:"KAFKA_TOPIC"`
+	DatabaseUri   string `env:"DATABASE_URI"`
+	WebserverAddr string `env:"WEBSERVER_ADDR"`
+	KafkaAddr     string `env:"KAFKA_ADDR"`
+	KafkaTopic    string `env:"KAFKA_TOPIC"`
 }
 
 func parseConfig() (*config, error) {

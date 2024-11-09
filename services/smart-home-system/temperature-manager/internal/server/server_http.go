@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 type TempController interface {
@@ -22,22 +24,32 @@ type server struct {
 	srv            *http.Server
 }
 
-func NewHttpServer(logger *slog.Logger, controller TempController) *server {
+func NewHttpServer(logger *slog.Logger, controller TempController, addr string) *server {
 	server := &server{
 		logger:         logger,
 		tempController: controller,
 	}
 	r := chi.NewRouter()
 
-	r.Route("/sensor/{sensor_id}", func(r chi.Router) {
-		r.Post("/target-temperature/{value}", server.changeTargetTemperatureHandler)
-		r.Post("/current-temperature/{value}", server.changeCurrentTemperatureHandler)
+	r.Use(middleware.Logger)
 
-		r.Get("/current-temperature", server.getCurrentTemperatureHandler)
-		r.Get("/target-temperature", server.getTargetTemperatureHandler)
+	logger.Info("asdasdasd")
+
+	r.Route("/", func(r chi.Router) {
+		r.Route("/sensor/{sensor_id}", func(r chi.Router) {
+			r.Get("/current-temperature", server.getCurrentTemperatureHandler)
+			r.Get("/target-temperature", server.getTargetTemperatureHandler)
+			r.Post("/target-temperature/{value}", server.changeTargetTemperatureHandler)
+			r.Post("/current-temperature/{value}", server.changeCurrentTemperatureHandler)
+		})
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(404)
+			fmt.Fprintln(w, "not found")
+		})
 	})
 
 	server.srv = &http.Server{
+		Addr:     addr,
 		Handler:  r,
 		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}

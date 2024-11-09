@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"temperature-manager/internal/service/tempcontrol"
 	"temperature-manager/pkg/logging"
+	"time"
 
 	"github.com/IBM/sarama"
 )
@@ -21,6 +22,7 @@ type producer struct {
 var _ tempcontrol.TemperatureEventsProducer = (*producer)(nil)
 
 func New(logger *slog.Logger, kafkaAddr, topic string) (*producer, error) {
+	time.Sleep(time.Second * 5)
 	kafkaProducer, err := sarama.NewSyncProducer([]string{kafkaAddr}, nil)
 	if err != nil {
 		logger.Error("Failed to create producer", "error", err)

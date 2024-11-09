@@ -63,11 +63,12 @@ func main() {
 	srv := server.NewHttpServer(
 		logger.With(slog.Time("http_server_init_time", time.Now())),
 		tempController,
+		cfg.WebserverAddr,
 	)
 
 	wg := new(sync.WaitGroup)
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		srv.Serve(ctx)
 		wg.Done()
 	}()
