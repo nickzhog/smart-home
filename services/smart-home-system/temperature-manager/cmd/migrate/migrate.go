@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"os"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -11,6 +12,7 @@ import (
 )
 
 func main() {
+	time.Sleep(time.Second * 2)
 	connString, _ := os.LookupEnv("DATABASE_URI")
 	if connString == "" {
 		panic("conn string empty")
