@@ -1,6 +1,59 @@
 version: '3'
 services:
 
+  notificator:
+    build:
+      context: notificator
+      dockerfile: Dockerfile
+    environment:
+      KAFKA_ADDR: "kafka:29092"
+      KAFKA_TOPIC: "temp_topic"
+    depends_on:
+      - kafka
+    networks:
+      - smart-home-network
+
+  temperature-manager:
+    build:
+      context: temperature-manager
+      dockerfile: Dockerfile.temperature
+    ports:
+      - "7070:7070"
+    environment:
+      DATABASE_URI: "postgresql://postgres_user:postgres_password@postgres:5432/postgres_db?sslmode=disable"
+      KAFKA_ADDR: "kafka:29092"
+      KAFKA_TOPIC: "temp_topic"
+      WEBSERVER_ADDR: ":7070"
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - smart-home-network
+
+  sensor1:
+    build:
+      context: ../sensor
+      dockerfile: Dockerfile
+    ports:
+      - "7170:80"
+    environment:
+      WEBSERVER_LISTEN: ":80"
+      SMART_HOME_ADDRESS: "http://temperature-manager:7070"
+      SENSOR_ID: "sensor1"
+    networks:
+      - smart-home-network
+  sensor2:
+    build:
+      context: ../sensor
+      dockerfile: Dockerfile
+    ports:
+      - "7171:80"
+    environment:
+      WEBSERVER_LISTEN: ":80"
+      SMART_HOME_ADDRESS: "http://temperature-manager:7070"
+      SENSOR_ID: "sensor2"
+    networks:
+      - smart-home-network
   postgres:
     image: postgres:latest
     container_name: postgres_container
@@ -21,23 +74,6 @@ services:
       - postgres
     environment:
       DATABASE_URI: "postgresql://postgres_user:postgres_password@postgres:5432/postgres_db?sslmode=disable"
-    networks:
-      - smart-home-network
-
-  temperatire-manager:
-    build:
-      context: temperature-manager
-      dockerfile: Dockerfile.temperature
-    ports:
-      - "7070:7070"
-    environment:
-      DATABASE_URI: "postgresql://postgres_user:postgres_password@postgres:5432/postgres_db?sslmode=disable"
-      KAFKA_ADDR: "kafka:29092"
-      KAFKA_TOPIC: "temp_topic"
-      WEBSERVER_ADDR: ":7070"
-    depends_on:
-      - postgres
-      - kafka
     networks:
       - smart-home-network
 

@@ -21,11 +21,18 @@ type producer struct {
 
 var _ tempcontrol.TemperatureEventsProducer = (*producer)(nil)
 
+var tries = 5
+
 func New(logger *slog.Logger, kafkaAddr, topic string) (*producer, error) {
-	time.Sleep(time.Second * 5)
 	kafkaProducer, err := sarama.NewSyncProducer([]string{kafkaAddr}, nil)
 	if err != nil {
-		logger.Error("Failed to create producer", "error", err)
+		logger.Error("failed to create producer", "error", err)
+		if tries != 0 {
+			tries--
+			time.Sleep(time.Second)
+			logger.Error("producer init error, try again", logging.ErrAttr(err))
+			return New(logger, kafkaAddr, topic)
+		}
 		return nil, err
 	}
 	// defer producer.Close()
