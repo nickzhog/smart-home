@@ -33,8 +33,6 @@ func NewHttpServer(logger *slog.Logger, controller TempController, addr string) 
 
 	r.Use(middleware.Logger)
 
-	logger.Info("asdasdasd")
-
 	r.Route("/", func(r chi.Router) {
 		r.Route("/sensor/{sensor_id}", func(r chi.Router) {
 			r.Get("/current-temperature", server.getCurrentTemperatureHandler)

@@ -30,7 +30,7 @@ func (r *repository) UpdateCurrentTemperature(ctx context.Context, id string, te
 	`
 	r.logger.Info("update current temperature", "query", format(q))
 
-	_, err := r.client.Exec(ctx, q, id, temp)
+	_, err := r.client.Exec(ctx, q, temp, id)
 
 	if err != nil {
 		r.logger.Error("cant update", "error", err, "id", id)
@@ -51,7 +51,7 @@ func (r *repository) UpdateTargetTemperature(ctx context.Context, id string, tem
 	`
 	r.logger.Info("update target request", "query", format(q))
 
-	_, err := r.client.Exec(ctx, q, id, temp)
+	_, err := r.client.Exec(ctx, q, temp, id)
 
 	if err != nil {
 		r.logger.Error("cant update", "error", err, "id", id)
@@ -99,5 +99,8 @@ func (r *repository) FindCurrentTemperature(ctx context.Context, sensorId string
 }
 
 func format(s string) string {
-	return strings.ReplaceAll(s, " ", "")
+	s = strings.ReplaceAll(s, "\t", " ")
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "  ", " ")
+	return s
 }
