@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"flag"
 	"log"
 	"os"
 
@@ -10,16 +9,12 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 )
 
-var (
-	connString = flag.String("c", "", "connection uri to db")
-)
-
 func main() {
-	flag.Parse()
-	if *connString == "" {
+	connString, _ := os.LookupEnv("DATABASE_URI")
+	if connString == "" {
 		panic("conn string empty")
 	}
-	err := Migrate(*connString)
+	err := Migrate(connString)
 	if err != nil {
 		log.Printf("cant migrate err: %v\n", err)
 		os.Exit(255)
@@ -42,6 +37,5 @@ func Migrate(connString string) error {
 	if err = m.Up(); err != nil && err != migrate.ErrNoChange {
 		return err
 	}
-
 	return nil
 }

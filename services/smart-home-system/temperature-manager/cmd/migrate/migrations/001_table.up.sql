@@ -14,4 +14,4 @@ VALUES
     ("sensor2" 1, 1),
     ("sensor3" 1, 1),
     ("sensor4" 1, 1)
-ON CONFLICT DO INSTEAD NOTHING
+ON CONFLICT DO INSTEAD NOTHING;
