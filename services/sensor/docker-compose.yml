@@ -9,7 +9,7 @@ services:
     environment:
       WEBSERVER_LISTEN: ":8081"
       SMART_HOME_ADDRESS: "http://gateway_in_kuber"
-      SENSOR_ID: "sensorr1"
+      SENSOR_ID: "sensor1"
   sensor2:
     build:
       context: .
@@ -19,7 +19,7 @@ services:
     environment:
       WEBSERVER_LISTEN: ":8082"
       SMART_HOME_ADDRESS: "http://gateway_in_kuber"
-      SENSOR_ID: "sensorr2"
+      SENSOR_ID: "sensor2"
   sensor3:
     build:
       context: .
@@ -29,4 +29,4 @@ services:
     environment:
       WEBSERVER_LISTEN: ":8083"
       SMART_HOME_ADDRESS: "http://gateway_in_kuber"
-      SENSOR_ID: "sensorr3"
+      SENSOR_ID: "sensor3"
