@@ -30,5 +30,6 @@ func main() {
 		logger.Error("cant consumer init", logging.ErrAttr(err))
 		os.Exit(255)
 	}
+	logger.Info("starting")
 	consumer.Listen(context.Background())
 }
