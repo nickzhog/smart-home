@@ -6,10 +6,10 @@ services:
       context: notificator
       dockerfile: Dockerfile
     environment:
-      KAFKA_ADDR: "kafka:29092"
+      KAFKA_ADDR: "redpanda:9092"
       KAFKA_TOPIC: "temp_topic"
     depends_on:
-      - kafka
+      - redpanda
     networks:
       - smart-home-network
 
@@ -21,12 +21,12 @@ services:
       - "7070:7070"
     environment:
       DATABASE_URI: "postgresql://postgres_user:postgres_password@postgres:5432/postgres_db?sslmode=disable"
-      KAFKA_ADDR: "kafka:29092"
+      KAFKA_ADDR: "redpanda:9092"
       KAFKA_TOPIC: "temp_topic"
       WEBSERVER_ADDR: ":7070"
     depends_on:
       - postgres
-      - kafka
+      - redpanda
     networks:
       - smart-home-network
 
@@ -77,65 +77,17 @@ services:
     networks:
       - smart-home-network
 
-# kafka 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+  redpanda:
+    image: redpandadata/redpanda:latest
+    command:
+      - redpanda start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
     ports:
-      - 22181:2181
+      - "19092:19092"  # External Kafka API
+      - "9644:9644"    # Admin API
     networks:
       - smart-home-network
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper
-    ports:
-      - 29092:29092
-    hostname: kafka
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
-    networks:
-      - smart-home-network
-  kafka2:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper
-    ports:
-      - 29093:29092
-    hostname: kafka2
-    environment:
-      KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:29093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
-    networks:
-      - smart-home-network
-  kafka-ui:
-    image: provectuslabs/kafka-ui
-    container_name: kafka-ui
-    ports:
-      - 8090:8080
-    restart: always
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092,kafka2:29093
-      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
-    links:
-      - kafka
-      - kafka2
-      - zookeeper
-    networks:
-      - smart-home-network
-
 networks:
   smart-home-network:
     driver: bridge
