@@ -25,7 +25,9 @@ func main() {
 		logger.With(slog.Time("consumer_init_time", time.Now())),
 		client,
 		cfg.KafkaAddr,
-		cfg.KafkaTopic)
+		cfg.KafkaTopic,
+		cfg.KafkaPartition,
+		cfg.KafkaOffset)
 	if err != nil {
 		logger.Error("cant consumer init", logging.ErrAttr(err))
 		os.Exit(255)
