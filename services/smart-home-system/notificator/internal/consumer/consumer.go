@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"notificator/pkg/logging"
@@ -25,7 +26,6 @@ var tries = 5000000
 
 func New(logger *slog.Logger, sender Sender, kafkaAddr, topic string, partition, offset int) (*consumer, error) {
 	config := sarama.NewConfig()
-	// config.Version = sarama.V2_5_0_0
 	config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRoundRobin()
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
 
@@ -65,6 +65,73 @@ func (c *consumer) Listen(ctx context.Context) {
 		if err != nil {
 			c.logger.Error("consume err", logging.ErrAttr(err))
 			continue
+		}
+	}
+}
+
+type ConsumerHandler struct {
+	ctx context.Context
+	c   *consumer
+}
+
+func (h *ConsumerHandler) Setup(session sarama.ConsumerGroupSession) error {
+	h.c.logger.Info("New session started",
+		"claims", session.Claims(),
+		"member_id", session.MemberID())
+	return nil
+
+}
+func (h *ConsumerHandler) Cleanup(session sarama.ConsumerGroupSession) error {
+	h.c.logger.Info("cleanup",
+		"claims", session.Claims(),
+		"member_id", session.MemberID())
+	return nil
+}
+func (h *ConsumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	h.c.logger.Info("Starting consumption for partition",
+		"partition", claim.Partition(),
+		"initial_offset", claim.InitialOffset())
+
+	defer func() {
+		h.c.logger.Info("Stopping consumption for partition",
+			"partition", claim.Partition())
+	}()
+
+	for {
+		select {
+		case <-h.ctx.Done():
+			h.c.logger.Info("stop")
+			return nil
+
+		case msg, ok := <-claim.Messages():
+			if !ok {
+				h.c.logger.Error("partition channel closed")
+				return fmt.Errorf("partition channel closed")
+			}
+			var event EventTargetTemperature
+			err := json.Unmarshal(msg.Value, &event)
+			if err != nil {
+				h.c.logger.Error("cant parse event",
+					logging.ErrAttr(err),
+					"data", string(msg.Value))
+				continue
+			}
+
+			// эмуляция нагрузки
+			time.Sleep(time.Second * 2)
+			//
+
+			err = h.c.sender.SendTargetTemperatureChangeEvent(h.ctx, event.SensorId, event.Value)
+			if err != nil {
+				h.c.logger.Error("cant handle event",
+					logging.ErrAttr(err),
+					"data", string(msg.Value))
+				continue
+			}
+			session.MarkMessage(msg, "") // Подтверждаем обработку
+
+			h.c.logger.Info("handled event",
+				"event", fmt.Sprintf("%+v", event))
 		}
 	}
 }
