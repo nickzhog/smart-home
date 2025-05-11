@@ -8,7 +8,7 @@ import (
 	"temperature-manager/pkg/logging"
 	"time"
 
-	"github.com/IBM/sarama"
+	nsq "github.com/nsqio/go-nsq"
 )
 
 type producer struct {
@@ -16,22 +16,23 @@ type producer struct {
 	topic     string
 	kafkaAddr string
 
-	kafkaProducer sarama.SyncProducer
+	kafkaProducer *nsq.Producer
 }
 
 var _ tempcontrol.TemperatureEventsProducer = (*producer)(nil)
 
 var tries = 5
 
-func New(logger *slog.Logger, kafkaAddr, topic string) (*producer, error) {
-	kafkaProducer, err := sarama.NewSyncProducer([]string{kafkaAddr}, nil)
+func New(logger *slog.Logger, brokerAddr, topic string) (*producer, error) {
+	config := nsq.NewConfig()
+	nsqproducer, err := nsq.NewProducer(brokerAddr, config)
 	if err != nil {
 		logger.Error("failed to create producer", "error", err)
 		if tries != 0 {
 			tries--
 			time.Sleep(time.Second)
 			logger.Error("producer init error, try again", logging.ErrAttr(err))
-			return New(logger, kafkaAddr, topic)
+			return New(logger, brokerAddr, topic)
 		}
 		return nil, err
 	}
@@ -41,9 +42,9 @@ func New(logger *slog.Logger, kafkaAddr, topic string) (*producer, error) {
 		logger: logger,
 
 		topic:     topic,
-		kafkaAddr: kafkaAddr,
+		kafkaAddr: brokerAddr,
 
-		kafkaProducer: kafkaProducer,
+		kafkaProducer: nsqproducer,
 	}
 	return producer, nil
 }
@@ -63,12 +64,7 @@ func (p *producer) ChangedTargetTemp(ctx context.Context, sensorId string, val i
 		p.logger.Error("json error", logging.ErrAttr(err))
 		return err
 	}
-	msg := &sarama.ProducerMessage{
-		Topic: p.topic,
-		Key:   sarama.StringEncoder("target_temperature_changes"),
-		Value: sarama.ByteEncoder(eventJson),
-	}
-	_, _, err = p.kafkaProducer.SendMessage(msg)
+	err = p.kafkaProducer.Publish(p.topic, eventJson)
 	if err != nil {
 		p.logger.Error("cant send to kafka", logging.ErrAttr(err))
 		return err

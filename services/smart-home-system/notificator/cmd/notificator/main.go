@@ -20,8 +20,8 @@ func main() {
 	}
 	logger.Info(fmt.Sprintf("notificator cfg: %+v", *cfg))
 
-	client := client.NewNotifier(logger.With(slog.Time("http_clinet_init_time", time.Now())))
-	consumer, err := consumer.New(
+	client := client.NewNotifier(logger.With(slog.Time("http_client_init_time", time.Now())))
+	_, err = consumer.New(
 		logger.With(slog.Time("consumer_init_time", time.Now())),
 		client,
 		cfg.KafkaAddr,
@@ -33,5 +33,5 @@ func main() {
 		os.Exit(255)
 	}
 	logger.Info("starting")
-	consumer.Listen(context.Background())
+	<-context.Background().Done()
 }

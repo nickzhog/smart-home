@@ -6,23 +6,39 @@ services:
       context: notificator
       dockerfile: Dockerfile
     environment:
-      KAFKA_ADDR: "redpanda:9092"
-      KAFKA_TOPIC: "temp_topic"
+      KAFKA_ADDR: "nsqlookupd:4161"
+      KAFKA_TOPIC: "temp-topic"
     depends_on:
-      - redpanda
+      - nsqlookupd
+      - temperature-manager
     networks:
       - smart-home-network
 
-  redpanda:
-    image: redpandadata/redpanda:latest
-    command:
-      - redpanda start
-      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
-      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
-      
+  nsqlookupd:
+    image: nsqio/nsq
+    command: /nsqlookupd
     ports:
-      - "19092:19092"  # External Kafka API
-      - "9644:9644"    # Admin API
+      - "4160:4160"
+      - "4161:4161"
+    networks:
+      - smart-home-network
+  nsqd:
+    image: nsqio/nsq
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4150:4150"
+      - "4151:4151"
+    networks:
+      - smart-home-network
+  nsqadmin:
+    image: nsqio/nsq
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4171:4171"
     networks:
       - smart-home-network
 
@@ -34,12 +50,12 @@ services:
       - "7070:7070"
     environment:
       DATABASE_URI: "postgresql://postgres_user:postgres_password@postgres:5432/postgres_db?sslmode=disable"
-      KAFKA_ADDR: "redpanda:9092"
-      KAFKA_TOPIC: "temp_topic"
+      KAFKA_ADDR: "nsqd:4150"
+      KAFKA_TOPIC: "temp-topic"
       WEBSERVER_ADDR: ":7070"
     depends_on:
       - postgres
-      - redpanda
+      - nsqd
     networks:
       - smart-home-network
 

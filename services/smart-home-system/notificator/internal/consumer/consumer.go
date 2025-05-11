@@ -3,13 +3,12 @@ package consumer
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"notificator/pkg/logging"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/nsqio/go-nsq"
 )
 
 type Sender interface {
@@ -17,29 +16,17 @@ type Sender interface {
 }
 type consumer struct {
 	logger       *slog.Logger
-	partConsumer sarama.ConsumerGroup
+	partConsumer *nsq.Consumer
 	sender       Sender
 
 	topic string
 }
 
-var tries = 5000000
+var tries = 100
 
 func New(logger *slog.Logger, sender Sender, kafkaAddr, topic string, partition, offset int) (*consumer, error) {
-	config := sarama.NewConfig()
-	config.Consumer.Offsets.Initial = sarama.OffsetOldest
-
-	// При явном указании версии ничего не работает и ни одна нода не потребляет
-	// config.Version = sarama.V2_8_0_0 // Явное указание версии
-
-	config.Consumer.Group.ResetInvalidOffsets = true
-	config.Net.MaxOpenRequests = 1
-	config.Consumer.MaxProcessingTime = 10 * time.Second
-
-	config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRoundRobin()
-	config.Consumer.Group.Rebalance.Timeout = 60 * time.Second // Увеличиваем таймаут
-
-	group, err := sarama.NewConsumerGroup([]string{kafkaAddr}, "groupID", config)
+	config := nsq.NewConfig()
+	nsqconsumer, err := nsq.NewConsumer(topic, fmt.Sprintf("test-channel-%v", partition), config)
 	if err != nil {
 		if tries != 0 {
 			time.Sleep(time.Second)
@@ -49,14 +36,27 @@ func New(logger *slog.Logger, sender Sender, kafkaAddr, topic string, partition,
 		}
 		return nil, fmt.Errorf("failed to create consumer: %w", err)
 	}
-	// defer group.Close()
 
 	consumer := &consumer{
 		logger:       logger,
-		partConsumer: group,
+		partConsumer: nsqconsumer,
 		sender:       sender,
 		topic:        topic,
 	}
+
+	nsqconsumer.AddHandler(&handler{c: *consumer})
+	// Use nsqlookupd to discover nsqd instances
+	err = nsqconsumer.ConnectToNSQLookupd(kafkaAddr)
+	if err != nil {
+		if tries != 0 {
+			time.Sleep(time.Second)
+			tries--
+			logger.Error("consumer init error, try again", logging.ErrAttr(err))
+			return New(logger, sender, kafkaAddr, topic, partition, offset)
+		}
+		return nil, fmt.Errorf("failed to create consumer: %w", err)
+	}
+
 	return consumer, nil
 }
 
@@ -65,89 +65,40 @@ type EventTargetTemperature struct {
 	Value    int    `json:"value,omitempty"`
 }
 
-func (c *consumer) Listen(ctx context.Context) {
-	defer c.partConsumer.Close()
-	for {
-		if ctx.Err() != nil {
-			c.logger.Info("exit by ctx")
-			return
-		}
+type handler struct {
+	c consumer
+}
 
-		err := c.partConsumer.Consume(ctx, []string{c.topic}, &ConsumerHandler{ctx: ctx, c: c})
-		if err != nil {
-			if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-				return
-			}
-			time.Sleep(5 * time.Second)
-			c.logger.Error("consume err", logging.ErrAttr(err))
-			continue
-		}
+func (h *handler) HandleMessage(m *nsq.Message) error {
+	if len(m.Body) == 0 {
+		h.c.logger.Error("got msg with empty body")
+		return nil
 	}
-}
 
-type ConsumerHandler struct {
-	ctx context.Context
-	c   *consumer
-}
-
-func (h *ConsumerHandler) Setup(session sarama.ConsumerGroupSession) error {
-	h.c.logger.Info("New session started",
-		"claims", session.Claims(),
-		"member_id", session.MemberID())
-	return nil
-
-}
-func (h *ConsumerHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	h.c.logger.Info("cleanup",
-		"claims", session.Claims(),
-		"member_id", session.MemberID())
-	return nil
-}
-func (h *ConsumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	h.c.logger.Info("Starting consumption for partition",
-		"partition", claim.Partition(),
-		"initial_offset", claim.InitialOffset())
-
-	defer func() {
-		h.c.logger.Info("Stopping consumption for partition",
-			"partition", claim.Partition())
-	}()
-
-	for {
-		select {
-		case <-h.ctx.Done():
-			h.c.logger.Info("stop")
-			return nil
-
-		case msg, ok := <-claim.Messages():
-			if !ok {
-				h.c.logger.Error("partition channel closed")
-				return fmt.Errorf("partition channel closed")
-			}
-			var event EventTargetTemperature
-			err := json.Unmarshal(msg.Value, &event)
-			if err != nil {
-				h.c.logger.Error("cant parse event",
-					logging.ErrAttr(err),
-					"data", string(msg.Value))
-				continue
-			}
-
-			// эмуляция нагрузки
-			time.Sleep(time.Second * 2)
-			//
-
-			err = h.c.sender.SendTargetTemperatureChangeEvent(h.ctx, event.SensorId, event.Value)
-			if err != nil {
-				h.c.logger.Error("cant handle event",
-					logging.ErrAttr(err),
-					"data", string(msg.Value))
-				continue
-			}
-			session.MarkMessage(msg, "") // Подтверждаем обработку
-
-			h.c.logger.Info("handled event",
-				"event", fmt.Sprintf("%+v", event))
-		}
+	var event EventTargetTemperature
+	err := json.Unmarshal(m.Body, &event)
+	if err != nil {
+		h.c.logger.Error("cant parse event",
+			logging.ErrAttr(err),
+			"data", string(m.Body))
+		return err
 	}
+
+	// эмуляция нагрузки
+	time.Sleep(time.Second * 2)
+	//
+
+	err = h.c.sender.SendTargetTemperatureChangeEvent(context.TODO(), event.SensorId, event.Value)
+	if err != nil {
+		h.c.logger.Error("cant handle event",
+			logging.ErrAttr(err),
+			"data", string(m.Body))
+		return err
+	}
+
+	h.c.logger.Info("handled event",
+		"event", fmt.Sprintf("%+v", event))
+	m.Finish()
+
+	return nil
 }
