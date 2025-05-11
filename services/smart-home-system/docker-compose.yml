@@ -20,8 +20,6 @@ services:
       - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
       - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
       
-      - --set redpanda.default_topic_partitions=3  # Добавьте эту строку
-      - --set redpanda.enable_idempotence=true
     ports:
       - "19092:19092"  # External Kafka API
       - "9644:9644"    # Admin API

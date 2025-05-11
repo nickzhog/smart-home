@@ -3,6 +3,7 @@ package consumer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"notificator/pkg/logging"
@@ -26,8 +27,17 @@ var tries = 5000000
 
 func New(logger *slog.Logger, sender Sender, kafkaAddr, topic string, partition, offset int) (*consumer, error) {
 	config := sarama.NewConfig()
-	config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRoundRobin()
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
+
+	// При явном указании версии ничего не работает и ни одна нода не потребляет
+	// config.Version = sarama.V2_8_0_0 // Явное указание версии
+
+	config.Consumer.Group.ResetInvalidOffsets = true
+	config.Net.MaxOpenRequests = 1
+	config.Consumer.MaxProcessingTime = 10 * time.Second
+
+	config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategyRoundRobin()
+	config.Consumer.Group.Rebalance.Timeout = 60 * time.Second // Увеличиваем таймаут
 
 	group, err := sarama.NewConsumerGroup([]string{kafkaAddr}, "groupID", config)
 	if err != nil {
@@ -56,13 +66,19 @@ type EventTargetTemperature struct {
 }
 
 func (c *consumer) Listen(ctx context.Context) {
+	defer c.partConsumer.Close()
 	for {
 		if ctx.Err() != nil {
 			c.logger.Info("exit by ctx")
 			return
 		}
+
 		err := c.partConsumer.Consume(ctx, []string{c.topic}, &ConsumerHandler{ctx: ctx, c: c})
 		if err != nil {
+			if errors.Is(err, sarama.ErrClosedConsumerGroup) {
+				return
+			}
+			time.Sleep(5 * time.Second)
 			c.logger.Error("consume err", logging.ErrAttr(err))
 			continue
 		}
