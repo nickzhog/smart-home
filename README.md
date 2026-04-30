@@ -1,149 +1,83 @@
-# Документация
 
-## Smart-Home
+# Smart Home: Legacy Monolith Migration (Strangler Fig Pattern)
 
-Система управления умным домом.
+This project demonstrates a strategic architectural transition from a legacy Java Spring Boot monolith to a highly scalable, event-driven microservices architecture using **Go**, **Kafka**, and **Kubernetes**.
 
-### AsIs
+## 🏗 Architectural Vision
 
-[Все диаграммы](docs/as-is-diagrams/)
+The core objective of this project is to implement the **Strangler Fig** pattern. By intercepting traffic at the API Gateway level, functionality is incrementally "strangled" out of the Java monolith and replaced with high-performance Go microservices.
 
-### Домены
+### C4 Model Documentation
 
-#### Мониторинг температуры
+The system design is documented using the C4 model to ensure clarity across different levels of abstraction:
 
-##### Получить текущую температуру
+* **Context & Container Diagrams**: High-level system overview and infrastructure boundaries.
+* **Component Diagrams**: Detailed view of internal service structures and interactions.
+* **ER-Diagrams**: Data modeling for the target state.
 
-#### Управление температурой
+You can find all diagrams in the [`/docs`](/docs) directory.
 
-##### Изменения состояния датчиков
+---
 
+## 🛠 Tech Stack
 
-### Анализ монолитного приложения 
+* **Backend**: Go (Microservices), Java 17 (Legacy Monolith), Spring Boot 3.x.
+* **Communication**: Asynchronous Event-Driven via **Apache Kafka**.
+* **Infrastructure**: Kubernetes (Minikube), Helm (Modular Charts), Terraform (IaaC).
+* **Traffic Management**: **Kusk API Gateway** (OpenAPI-driven routing).
+* **Storage**: PostgreSQL (Relational persistence).
 
-Проект представляет собой классический пример монолитного приложения с использованием стеков Spring Boot и JPA для управления умным домом, где пользователи могут управлять отоплением и мониторить температуру через веб-интерфейс. Приложение имеет стандартную архитектуру и типичную организацию пакетов для приложений на основе Spring Boot.
+---
 
-Архитектура приложения монолитная, это может упростить разработку на ранних этапах, но потенциально усложнит масштабирование и сопровождение при увеличении функциональности системы.
+## 🚀 Migration Strategy: From Monolith to Microservices
 
-#### Context
+### Phase 1: The As-Is State (Legacy)
 
-![context-diagram-as-is](docs/as-is-diagrams/contexts.png)
+A classic Java monolith handling synchronous HTTP requests for temperature control.
 
-#### Container
+* **Pain Point**: Synchronous interaction with sensors leads to system overhead and high latency.
 
-![container-diagram-as-is](docs/as-is-diagrams/containers.png)
+### Phase 2: The To-Be State (Event-Driven)
 
-#### Component
+Introduction of specialized services to handle load and improve responsiveness:
 
-![component-diagram-as-is](docs/as-is-diagrams/components.png)
+1. **Temperature Manage Service (Go)**: Decouples device state management from the core logic.
+2. **Notification Service (Go)**: Consumes Kafka events to notify devices asynchronously about state changes.
+3. **Sensor Stub (Go)**: Simulates hardware behavior for end-to-end integration testing.
 
-#### Проблема
+---
 
-Синхронное взаимодействие с датчиками приводит к излишней нагрузке системы. Так как датчику необходимо совершать периодические запросы к системе для отслеживания изменений своего состояния.​​​​​​​
+## 🚦 Getting Started
 
-### ToBe
+### Prerequisites
 
-[Все диаграммы](docs/to-be-diagrams/)
+* Minikube
+* Terraform
+* Helm
+* Kusk CLI
 
-#### Container
+### Deployment
 
-![container-diagram-to-be](docs/to-be-diagrams/containers.png)
+1. **Infrastructure**: Provision Kubernetes resources using Terraform.
 
-#### Component
+   ```bash
+   cd terraform && terraform apply
+   ```
 
-![component-diagram-to-be](docs/to-be-diagrams/components.png)
+2. **Gateway**: Deploy the API Gateway using the OpenAPI specification.
 
-##### Users Manage Microservice
+   ```bash
+   kusk deploy -i api.yaml
+   ```
 
-Микросервис управления пользовательскими данными и аутентификацией.
+3. **Services**: Services are packaged as Helm charts for consistent deployment across environments.
 
-[OpenAPI Specification](docs/to-be-diagrams/openapi-users.json)
+---
 
-##### Temperature Manage Microservice
+## 📈 Roadmap & Future Improvements
 
-Микросервис для операций по изменению состояний устройств. А также позволяет понять актуальную температуру.
+To further align with production-grade Senior standards:
 
-[OpenAPI Specification](docs/to-be-diagrams/openapi-temperature.json)
-
-##### Notification Manage Microservice
-
-Микросервис для отправки уведомлений о событиях. Отправляет уведомления устройствам в умных домах об изменении их состояния.
-
-#### ER-Diagram
-
-![er-diagram-to-be](docs/to-be-diagrams/er-diagram.png)
-
-# Базовая настройка
-
-## Запуск minikube
-
-[Инструкция по установке](https://minikube.sigs.k8s.io/docs/start/)
-
-```bash
-minikube start
-```
-
-
-## Добавление токена авторизации GitHub
-
-[Получение токена](https://github.com/settings/tokens/new)
-
-```bash
-kubectl create secret docker-registry ghcr --docker-server=https://ghcr.io --docker-username=<github_username> --docker-password=<github_token> -n default
-```
-
-
-## Установка API GW kusk
-
-[Install Kusk CLI](https://docs.kusk.io/getting-started/install-kusk-cli)
-
-```bash
-kusk cluster install
-```
-
-
-## Настройка terraform
-
-[Установите Terraform](https://yandex.cloud/ru/docs/tutorials/infrastructure-management/terraform-quickstart#install-terraform)
-
-
-Создайте файл ~/.terraformrc
-
-```hcl
-provider_installation {
-  network_mirror {
-    url = "https://terraform-mirror.yandexcloud.net/"
-    include = ["registry.terraform.io/*/*"]
-  }
-  direct {
-    exclude = ["registry.terraform.io/*/*"]
-  }
-}
-```
-
-## Применяем terraform конфигурацию 
-
-```bash
-cd terraform
-terraform apply
-```
-
-## Настройка API GW
-
-```bash
-kusk deploy -i api.yaml
-```
-
-## Проверяем работоспособность
-
-```bash
-kubectl port-forward svc/kusk-gateway-envoy-fleet -n kusk-system 8080:80
-curl localhost:8080/hello
-```
-
-
-## Delete minikube
-
-```bash
-minikube delete
-```
+* **Observability**: Integration of Prometheus/Grafana for real-time monitoring and OpenTelemetry for distributed tracing across Java and Go services.
+* **Resiliency**: Implementation of Circuit Breaker and Retry patterns for inter-service communication.
+* **Security**: Migrating the `Users Manage Microservice` to support modern OAuth2/OIDC standards.
