@@ -1,0 +1,145 @@
+version: '3'
+services:
+
+  notificator:
+    build:
+      context: notificator
+      dockerfile: Dockerfile
+    environment:
+      KAFKA_ADDR: "kafka:29092"
+      KAFKA_TOPIC: "temp_topic"
+    depends_on:
+      - kafka
+    networks:
+      - smart-home-network
+
+  temperature-manager:
+    build:
+      context: temperature-manager
+      dockerfile: Dockerfile.temperature
+    ports:
+      - "7070:7070"
+    environment:
+      DATABASE_URI: "postgresql://postgres_user:postgres_password@postgres:5432/postgres_db?sslmode=disable"
+      KAFKA_ADDR: "kafka:29092"
+      KAFKA_TOPIC: "temp_topic"
+      WEBSERVER_ADDR: ":7070"
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - smart-home-network
+
+  sensor1:
+    build:
+      context: ../sensor
+      dockerfile: Dockerfile
+    ports:
+      - "7170:80"
+    environment:
+      WEBSERVER_LISTEN: ":80"
+      SMART_HOME_ADDRESS: "http://temperature-manager:7070"
+      SENSOR_ID: "sensor1"
+    networks:
+      - smart-home-network
+  sensor2:
+    build:
+      context: ../sensor
+      dockerfile: Dockerfile
+    ports:
+      - "7171:80"
+    environment:
+      WEBSERVER_LISTEN: ":80"
+      SMART_HOME_ADDRESS: "http://temperature-manager:7070"
+      SENSOR_ID: "sensor2"
+    networks:
+      - smart-home-network
+  postgres:
+    image: postgres:latest
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: postgres_db
+    ports:
+      - "5432:5432"
+    networks:
+      - smart-home-network
+
+  migrate:
+    build:
+      context: temperature-manager
+      dockerfile: Dockerfile.migrate
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URI: "postgresql://postgres_user:postgres_password@postgres:5432/postgres_db?sslmode=disable"
+    networks:
+      - smart-home-network
+
+# kafka 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+    networks:
+      - smart-home-network
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    hostname: kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+    networks:
+      - smart-home-network
+  kafka2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 29093:29092
+    hostname: kafka2
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+    networks:
+      - smart-home-network
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - 8090:8080
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092,kafka2:29093
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    links:
+      - kafka
+      - kafka2
+      - zookeeper
+    networks:
+      - smart-home-network
+
+networks:
+  smart-home-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
